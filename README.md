@@ -26,12 +26,6 @@ Python dependencies are split by component:
 
 The topology scripts also expect the container images `cloud/apache`, `dind`, and `edge_apache` to be available locally or pullable from your registry.
 
-## Setup
-
-1. Install the Python dependencies for the components you plan to run.
-2. Make sure Docker can run privileged containers, since the edge nodes are started as Docker containers inside the topology.
-3. Verify the local hostnames and remote addresses used by the scripts. Several scripts contain hard-coded SSH users, keys, and IPs that you will likely need to change for your environment.
-4. If you use the wireless topologies, ensure the host entries referenced in the topology files are present in `/etc/hosts`.
 
 ## Experiment Scripts
 
