@@ -1,3 +1,10 @@
+REMOTE_USER="your_remote_user"
+REMOTE_HOST="your.remote.host.or.ip"
+SSH_KEY_PATH="/path/to/your/private_key"
+REMOTE_PROJECT_PATH="workspace/drl-css"
+REMOTE_LOGS_PATH="/home/${REMOTE_USER}/logs"
+REMOTE_TARGET="${REMOTE_USER}@${REMOTE_HOST}"
+
 base=(2 3 4)
 users=20
 
@@ -9,19 +16,19 @@ do
         
         echo "Starting experiment with $k users and seed $i"
 
-        ssh -i /root/.ssh/id_rsa_grifo_root grifo@10.3.77.120 'pkill python'
-        ssh -i /root/.ssh/id_rsa_grifo_root grifo@10.3.77.120 'docker restart mn.cloud-1'
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" 'pkill python'
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" 'docker restart mn.cloud-1'
 
-        ssh -i /root/.ssh/id_rsa_grifo_root grifo@10.3.77.120 "mkdir logs/$k"
-        ssh -i /root/.ssh/id_rsa_grifo_root grifo@10.3.77.120 "python workspace/drl-css/services/steering/source/app.py --seed=$k" &
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" "mkdir logs/$k"
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" "python ${REMOTE_PROJECT_PATH}/services/steering/source/app.py --seed=$k" &
 
         python topology/run-one-edge.py --users=$users --arr_rate=$k --seed=$k
 
-        ssh -i /root/.ssh/id_rsa_grifo_root grifo@10.3.77.120 'pkill python'
-        ssh -i /root/.ssh/id_rsa_grifo_root grifo@10.3.77.120 'docker restart mn.cloud-1'
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" 'pkill python'
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" 'docker restart mn.cloud-1'
 
-        scp -i /root/.ssh/id_rsa_grifo_root -r grifo@10.3.77.120:/home/grifo/logs/$k/* logs/$k
-        ssh -i /root/.ssh/id_rsa_grifo_root grifo@10.3.77.120 "rm -r logs/$k"
+        scp -i "$SSH_KEY_PATH" -r "${REMOTE_TARGET}:${REMOTE_LOGS_PATH}/$k/*" logs/$k
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" "rm -r logs/$k"
 
         mn -c
         pkill xterm

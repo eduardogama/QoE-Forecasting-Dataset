@@ -246,19 +246,6 @@ if __name__ == '__main__':
     print(f"Current working directory: {os.getcwd()}")
     main = Main(
         path = f'./logs/{args.seed}',
-        # #### LSTM Model used in journal paper ####
-        # scaler_path = './services/planner/lstm_scaler_1m.sc',
-        # model_path = './services/planner/lstm_model_1m.h5',
-        # #### RNN Model with 40 epochs and batch size of 512 ####
-        # scaler_path = './services/planner/models/rnn_prediction_e40_b512.sc',
-        # model_path = './services/planner/models/rnn_prediction_e40_b512.h5',
-        # #### LSTM Model with 40 epochs and batch size of 512 ####
-        # scaler_path = './services/planner/models/rnn_prediction_e40_b512.sc',
-        # model_path = './services/planner/models/rnn_prediction_e40_b512.h5',
-        # #### GRU Model with 40 epochs and batch size of 512 ####
-        # scaler_path = './services/planner/models/gru_prediction_e40_b512.sc',
-        # model_path = './services/planner/models/gru_prediction_e40_b512.h5',
-        # #### Bi-GRU Model with 40 epochs and batch size of 64 ####
         scaler_path = './services/planner/models/bi-gru_prediction_relu_e40_b64_w6_T1.sc',
         model_path = './services/planner/models/bi-gru_prediction_relu_e40_b64_w6_T1.h5',
         window_size = 6,

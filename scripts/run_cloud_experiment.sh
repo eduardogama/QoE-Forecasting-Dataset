@@ -1,3 +1,11 @@
+REMOTE_USER="your_remote_user"
+REMOTE_HOST="your.remote.host.or.ip"
+SSH_KEY_PATH="/path/to/your/private_key"
+REMOTE_PROJECT_PATH="workspace/drl-css"
+REMOTE_LOGS_PATH="/home/${REMOTE_USER}/logs"
+REMOTE_MONITOR_URL="${REMOTE_HOST}:30500/receive_data"
+REMOTE_TARGET="${REMOTE_USER}@${REMOTE_HOST}"
+
 base=(2)
 users=20
 
@@ -7,20 +15,20 @@ do
     do
         echo "Running experiment with $k users and seed $i"
 
-        ssh -i /home/eduardo/.ssh/id_rsa_dionisio dionisio@10.3.77.15 'pkill python'
-        ssh -i /home/eduardo/.ssh/id_rsa_dionisio dionisio@10.3.77.15 'docker restart mn.cloud-1'
-        ssh -i /home/eduardo/.ssh/id_rsa_dionisio dionisio@10.3.77.15 "mkdir logs/$k"
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" 'pkill python'
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" 'docker restart mn.cloud-1'
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" "mkdir logs/$k"
 
-        ssh -i /home/eduardo/.ssh/id_rsa_dionisio dionisio@10.3.77.15 "python workspace/drl-css/services/steering/source/app.py --seed=$k" &
-        ssh -i /home/eduardo/.ssh/id_rsa_dionisio dionisio@10.3.77.15 "python workspace/drl-css/services/steering/source/monitors/container_monitor.py --url=10.3.77.15:30500/receive_data --interval=4" &
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" "python ${REMOTE_PROJECT_PATH}/services/steering/source/app.py --seed=$k" &
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" "python ${REMOTE_PROJECT_PATH}/services/steering/source/monitors/container_monitor.py --url=${REMOTE_MONITOR_URL} --interval=4" &
 
         python topology/run-cloud-only.py --users=$users --arr_rate=$k --seed=$k
 
-        ssh -i /home/eduardo/.ssh/id_rsa_dionisio dionisio@10.3.77.15 'pkill python'
-        ssh -i /home/eduardo/.ssh/id_rsa_dionisio dionisio@10.3.77.15 'docker restart mn.cloud-1'
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" 'pkill python'
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" 'docker restart mn.cloud-1'
 
-        scp -i /home/eduardo/.ssh/id_rsa_dionisio dionisio@10.3.77.15:/home/dionisio/logs/$k/* logs/$k
-        ssh -i /home/eduardo/.ssh/id_rsa_dionisio dionisio@10.3.77.15 "rm -r logs/$k"
+        scp -i "$SSH_KEY_PATH" "${REMOTE_TARGET}:${REMOTE_LOGS_PATH}/$k/*" logs/$k
+        ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" "rm -r logs/$k"
 
         mn -c
         pkill xterm

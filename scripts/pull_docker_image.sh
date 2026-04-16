@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Docker image to pull
-IMAGE="eduardogama/edge_apache"
+IMAGE="edge_apache"
 
 # Log file to store the timing results
 LOG_FILE="docker_pull_times_v2.log"

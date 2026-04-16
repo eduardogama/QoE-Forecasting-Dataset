@@ -1,12 +1,18 @@
+REMOTE_USER="your_remote_user"
+REMOTE_HOST="your.remote.host.or.ip"
+SSH_KEY_PATH="/path/to/your/private_key"
+REMOTE_PROJECT_PATH="workspace/drl-css"
+REMOTE_TARGET="${REMOTE_USER}@${REMOTE_HOST}"
+
 for k in $(seq 5 15);
 do
     python player/download-chrome.py
 
-    ssh -i /root/.ssh/id_rsa_grifo_root grifo@10.3.77.120 "python workspace/drl-css/steering-service/source/app.py --seed=$k" &
+    ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" "python ${REMOTE_PROJECT_PATH}/steering-service/source/app.py --seed=$k" &
     python ml-scenario-trainning-nocontainer.py --users=$k --seed=$k
 
-    ssh -i /root/.ssh/id_rsa_grifo_root grifo@10.3.77.120 'pkill python'
-    ssh -i /root/.ssh/id_rsa_grifo_root grifo@10.3.77.120 'docker restart cloud'
+    ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" 'pkill python'
+    ssh -i "$SSH_KEY_PATH" "$REMOTE_TARGET" 'docker restart cloud'
 
     # python ml-scenario-trainning-container.py --users=$k --seed=$k
 
