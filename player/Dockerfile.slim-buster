@@ -1,0 +1,38 @@
+# define base image as python slim-buster.
+FROM python:3.10-slim-buster as userbase
+
+## start builder stage.
+
+# this is the first stage of the build.
+# it will install all requirements.
+FROM userbase
+
+RUN apt-get update && \
+    apt-get install -y xvfb gnupg wget curl unzip --no-install-recommends && \
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
+    apt-get update -y && \
+    apt-get install -y google-chrome-stable
+
+# install chromedriver
+RUN apt-get install -yqq unzip
+
+# Set display port as an environment variable
+ENV DISPLAY=:99
+
+
+COPY requirements.txt /requirements.txt
+
+RUN pip install --upgrade pip
+
+RUN pip install -r requirements.txt
+
+RUN apt-get install -y \
+        bash \
+        tcpdump \
+        iperf \
+        iw \
+        wireless-tools \
+        net-tools \
+        iproute2 \
+        # iputils-ping

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>VoD example</title>
+
+    <script src="dist/dash.all.debug.js"></script>
+    <script src="js/main.js"></script>
+
+
+    <!-- Bootstrap core CSS -->
+    <link href="lib/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="lib/main.css" rel="stylesheet">
+
+    <style>
+        video {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<main>
+    <div class="container py-4">
+        <header class="pb-3 mb-4 border-bottom">
+            <img class=""
+                 src="lib/img/dashjs-logo.png"
+                 width="200">
+        </header>
+        <div class="row">
+            <div class="col-md-8">
+                    <video dash-video-player controls="true" muted></video>
+            </div>
+            <div class="col-md-4">
+                <div class="p-5 border rounded-3">
+                    <h4>Metrics</h4>
+                    <div>
+                        <strong>Reported bitrate:</strong>
+                        <span id="reportedBitrate"></span>
+                        <br/>
+                        <strong>Buffer level:</strong>
+                        <span id="bufferLevel"></span>
+                        <div id="chrome-only">
+                            <strong>Calculated bitrate:</strong>
+                            <span id="calculatedBitrate"></span>
+                        </div>
+                        <strong>Framerate:</strong>
+                        <span id="framerate"></span>
+                        </br>
+                        <strong>Resolution:</strong>
+                        <span id="resolution"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="pt-3 mt-4 text-muted border-top">
+            &copy; DASH-IF
+        </footer>
+    </div>
+</main>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        var userid = urlParams.get("uid") 
+        var abrstr = urlParams.get("abr")
+        var btrmax = urlParams.get("btrmax")        
+        
+        var url = "http://10.0.1.51/Ancient_Thought/4sec/avc/manifest.mpd";
+
+        
+        if(abrstr == '' || !abrstr) {
+            abrstr = 'abrDynamic'
+        }
+        
+        if(userid == '' || !userid) {
+            abrstr = 'anonymous'
+        }
+        
+        if(btrmax == '' || !btrmax) {
+            btrmax = 17000
+        }
+        
+        init(abrstr, url, btrmax);
+        sendQoE(userid)
+    });
+</script>
+
+<script src="highlighter.js"></script>
+</body>
+</html>

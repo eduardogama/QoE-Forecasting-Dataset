@@ -1,0 +1,12 @@
+name: video-streaming
+
+services:
+  cache:
+    image: caddy
+    deploy:
+      replicas: 3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./certs:/root/certs
+      - ../dataset:/srv
+      

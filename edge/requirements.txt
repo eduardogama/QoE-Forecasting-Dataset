@@ -1,0 +1,7 @@
+# Application requirements
+
+setuptools
+requests
+Flask==3.0.0
+cachetools==5.3.1
+

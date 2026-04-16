@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta http-equiv="cache-control" content="no-cache" />
+    <title>Baseline dash.js Player</title>
+    <meta name="description" content="" />
+
+    <script src="dist/dash.all.debug.js"></script>
+    <script src="dist/dash.mss.debug.js"></script>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        var constant = {
+            3000000: [1.17605641518082, 70.2104195796215],
+            5800000: [0.985114183257978, 160.060803222170],
+            7500000: [0.926464623598867, 220.712321728703],
+            12000000: [0.835510579424116, 397.170110357625],
+            17000000: [0.778846765313748, 613.848433264037],
+        }
+
+        var userid = urlParams.get("uid") 
+        var abrstr = urlParams.get("abr")
+        var btrmax = urlParams.get("btrmax")
+        var videoId  = urlParams.get("video")
+
+        var url = "http://mn.cloud-1"
+        if (videoId == "1") {
+            url += "/3DMark_Night_Raid"
+        } else if (videoId == "2") {
+            url += "/3DMark_Vantage"
+        } else if (videoId == "3") {
+            url += "/Ancient_Thought"
+        } else if (videoId == "4") {
+            url += "/Eldorado"
+        } else if (videoId == "5") {
+            url += "/Indoor_Soccer"
+        } else if (videoId == "6") {
+            url += "/Lifting_Off"
+        } else if (videoId == "7") {
+            url += "/Moment_of_Intensity"
+        } else if (videoId == "8") {
+            url += "/Seconds_That_Count"
+        } else if (videoId == "9") {
+            url += "/Skateboarding"
+        } else {
+            url += "/Unspoken_Friend"
+        }
+
+        url += '/4sec/avc/manifest.mpd'
+
+        if(abrstr == '' || !abrstr) {
+            // "abrDynamic", "abrBola", "abrThroughput", "abrL2A" or "abrLoLP"
+            abrstr = 'abrThroughput'
+        }
+        
+        if(userid == '' || !userid) {
+            userid = Math.random().toString(36).substring(7);
+            // userid = 'anonymous'
+        }
+        
+        if(btrmax == '' || !btrmax) {
+            btrmax = 12000000
+        }
+
+        var player = null;
+        var video = null;
+        var playing = false;
+
+        var videoQuality = 0;
+        var videoQuality_1 = 0;
+        var videoHadStall = 0;
+        var videoQualitySum = 0;
+        var videoQualitySwitch = 0;
+        var videoThroughput = 0;
+        var videoStallFrequency = 0;
+        var K = 0;
+        var totalQoE = 0;
+        var maxQuality = 0;
+
+        var a_1 = 0;
+        var a_2 = 0;
+        var endpoint = 'mn.cloud-1'
+
+        console.log("URL: " + url);
+
+        function onLoad() {
+            console.log(btrmax)
+
+            a_1 = constant[btrmax][0];
+            a_2 = constant[btrmax][1];
+            videoMaxQuality = btrmax
+
+            video = document.querySelector(".dash-video-player video");
+            player = dashjs.MediaPlayer().create();
+            player.updateSettings({ 
+                'streaming': { 
+                    'lastMediaSettingsCachingInfo': { 
+                        'enabled': false 
+                    },
+                    'abr': {
+                        'ABRStrategy': abrstr,
+                        'maxBitrate': {
+                            'video': btrmax/1000
+                        }
+                    }
+                }
+            });
+            player.initialize(video, url, true);
+            player.setMute(true);
+            player.setAutoPlay(true);
+
+            video.addEventListener('playing', function () {
+                console.log('playing');
+                playing = true;
+            });
+
+            player.on("playbackEnded", function (e) {
+                window.close();
+            });
+
+            player.on("error", function (e) {
+                console.log("Error: " + e.error);
+                window.close();
+            });
+
+            player.on("streamInitialized", function (e) {
+                console.log("Stream initialized");
+            });
+
+            player.on("videoChunkReceived", function (e) {
+                if (e.mediaType == 'video' && e.chunk.segmentType == 'MediaSegment') {
+                    console.log("Video chunk received");
+
+                    K += 1;
+                    q = e.chunk.mediaInfo.bitrateList[e.chunk.quality].bandwidth
+                    videoQuality = ChunkQuality(q);
+                    videoStallFrequency += videoHadStall;
+
+                    videoQualitySum += videoQuality
+
+                    if (videoQuality_1 != 0 && !isNaN(videoQuality_1)) {
+                        videoQualitySwitch += Math.abs(videoQuality_1 - videoQuality)
+                    }
+
+                    totalQoE = (videoQualitySum - videoQualitySwitch - videoStallFrequency) / K;
+
+                    videoQuality_1 = videoQuality
+                    videoHadStall = 0;
+                    videoThroughput = player.getAverageThroughput('video');
+
+                    console.info(
+                        totalQoE,
+                        videoQuality, 
+                        K,
+                        a_1,
+                        a_2,
+                        videoMaxQuality
+                    )
+                    fetch('http://steering:30500/receive_data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            player_name: userid,
+                            metrics: {
+                                time: player.time(), 
+                                qoe: totalQoE,
+                                thr: videoThroughput,
+                                video: videoId,
+                                K: K,
+                                videoQuality: videoQuality,
+                                stalls: videoStallFrequency,
+                                endpoint: endpoint,              
+                            }
+                        })
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log('Post request successful');
+                        } else {
+                            console.log('Post request failed');
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Error:', error);
+                    });
+                }
+            });
+            
+            player.on(dashjs.MediaPlayer.events.METRIC_ADDED, function (e) {
+                // Check if the metric added is an HTTP request metric
+                if (e.metric === 'HttpList' && e.value && e.value.type === 'MediaSegment') {
+                    // Extract the URL of the requested segment
+                    const segmentUrl = e.value.url;
+            
+                    // Optionally, parse the URL to extract the server information
+                    endpoint = new URL(segmentUrl).host;
+
+                    // Log or store the server information
+                    console.log(`Segment requested from server: ${endpoint}`);
+                    console.log(endpoint)
+                }
+            });
+        }
+
+        function ChunkQuality(quality) {
+            return a_1 * Math.log(a_2 * quality / videoMaxQuality);
+        }
+
+        function loadStream(stream) {
+            player.attachSource(null);
+            playing = false;
+            player.setProtectionData(stream.protData);
+            player.attachSource(stream.url);
+        }
+
+        function isPlaying() {
+            return playing;
+        }
+    </script>
+
+    <style>
+        video {
+            width: 640px;
+            height: 480px;
+        }
+    </style>
+
+    <body onload="onLoad()">
+        <div class="dash-video-player">
+            <div id="ttml-rendering-div"></div>
+            <video controls="true" preload="auto" autoplay=""></video>
+        </div>
+    </body>
+
+</html>

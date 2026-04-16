@@ -1,0 +1,11 @@
+FROM docker:rc-dind
+
+RUN apk add --update --no-cache \
+    bash \
+    tcpdump \
+    iperf \
+    iproute2 \
+    iputils \
+    curl
+
+WORKDIR /home/

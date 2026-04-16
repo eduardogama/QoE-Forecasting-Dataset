@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>VoD example</title>
+
+    <script src="dash.all.min.js"></script>
+    <script src="js/main.js"></script>
+    <style>
+        video {
+            width: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <video dash-video-player controls="true" muted></video>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            var userid = urlParams.get("uid") 
+            var abrstr = urlParams.get("abr")
+            var btrmax = urlParams.get("btrmax")
+            var video  = urlParams.get("video")
+            
+            var url = "http://mn.cloud-1"
+            if (video == "1") {
+                url += "/3DMark_Night_Raid"
+            } else if (video == "2") {
+                url += "/3DMark_Vantage"
+            } else if (video == "3") {
+                url += "/Ancient_Thought"
+            } else if (video == "4") {
+                url += "/Eldorado"
+            } else if (video == "5") {
+                url += "/Indoor_Soccer"
+            } else if (video == "6") {
+                url += "/Lifting_Off"
+            } else if (video == "7") {
+                url += "/Moment_of_Intensity"
+            } else if (video == "8") {
+                url += "/Seconds_That_Count"
+            } else if (video == "9") {
+                url += "/Skateboarding"
+            } else {
+                url += "/Unspoken_Friend"
+            }
+
+            url += '/4sec/avc/manifest.mpd'
+
+            if(abrstr == '' || !abrstr) {
+                abrstr = 'abrDynamic'
+            }
+            
+            if(userid == '' || !userid) {
+                abrstr = 'anonymous'
+            }
+            
+            if(btrmax == '' || !btrmax) {
+                btrmax = 17000
+            }
+            
+            init(abrstr, url, btrmax);
+        });
+    </script>
+</body>
+
+</html>

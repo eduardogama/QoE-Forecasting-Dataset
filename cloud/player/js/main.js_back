@@ -1,0 +1,181 @@
+// QoE model - Eduardo S Gama
+var videoQuality = 0;
+var videoQuality_1 = 0;
+var videoStartUpDelay = 0;
+var videoEventStall = 0;
+var videoHasStall = false;
+var videoStallDuration = 0;
+var K = 0;
+var videoQualitySum = 0;
+var videoQualitySwitch = 0;
+var totalQoe = 0;
+var bufferLevel = 0;
+var throughput = 0;
+var videoMaxQuality = 14;
+
+var constant = {
+    3000: [1.17605641518082, 70.2104195796215],
+    5800: [0.985114183257978, 160.060803222170],
+    7500: [0.926464623598867, 220.712321728703],
+    12000: [0.835510579424116, 397.170110357625],
+    17000: [0.778846765313748, 613.848433264037],
+    22000: [0.741615909816603, 847.282723505478],
+    25000: [0.724445949994823, 994.088410958813],
+    30000: [0.701289016152584, 1248.53743508635],
+}
+
+var selectedServiceLocation = ""
+
+var representationId = {
+    1: 100,
+    2: 200,
+    3: 375,
+    4: 550,
+    5: 750,
+    6: 1000,
+    7: 1500,
+    8: 3000,
+    9: 5800,
+    10: 7500,
+    11: 12000,
+    12: 17000,
+    13: 22000,
+    14: 25000,
+    15: 30000
+};
+
+
+var a_1 = 0.701289016152584;
+var a_2 = 1248.53743508635;
+
+ForcePlay = (video) => {
+    const promise = video.play();
+    if(promise !== undefined){
+        promise.then(() => {
+            // Autoplay started
+            console.log("Video started !")
+        }).catch(error => {
+            // Autoplay was prevented.
+            video.muted = true;
+            video.play();
+        });
+    }
+}
+
+
+init = (abrstr, url, btrmax) => {
+
+    a_1 = constant[btrmax][0];
+    a_2 = constant[btrmax][1];
+    videoMaxQuality = btrmax
+    
+    console.log(a_1, a_2)
+
+    var video = document.querySelector("video"); 
+    var player = dashjs.MediaPlayer().create();
+	
+	player.updateSettings({
+	    streaming: {
+	        abr: {
+		        ABRStrategy: abrstr,
+	            maxBitrate: {
+                    video: btrmax
+                }
+	        }
+	    }
+    });
+    
+    player.initialize(video, url, true);
+
+    window.player = player
+    window.steering = null
+    
+//    ForcePlay(video);
+    onLoadQoE(player);
+}
+
+onLoadQoE = (player) => {
+
+    player.on(dashjs.MediaPlayer.events.PLAYBACK_STARTED, function (event) {
+        videoStartUpDelay = performance.now() / 1000
+    });
+
+    player.on("bufferStalled", function (e) {
+        videoEventStall = performance.now();
+        videoHasStall = true;
+    });
+
+    player.on("bufferLoaded", function (e) {
+        if (videoHasStall) {
+            videoStallDuration += (performance.now() - videoEventStall)/1000;
+            videoHasStall = false;
+        }
+    });
+
+    player.on("videoChunkReceived", function (e) {
+        if (e.mediaType == 'video' &&
+            e.chunk.segmentType == 'MediaSegment' &&
+            e.chunk.index >= K) {
+
+            var videoQ = e.chunk.quality;
+            
+            K += 1;
+
+            videoQuality_1 = ChunkQuality(videoQ+1, videoMaxQuality);
+
+            if (videoQuality != 0 && !isNaN(videoQuality)) {
+                videoQualitySum += videoQuality_1
+                videoQualitySwitch += Math.abs(videoQuality_1 - videoQuality)
+
+                totalQoe = (videoQualitySum - videoQualitySwitch - videoStallDuration)/K;
+            }
+
+            videoQuality = videoQuality_1;
+            
+            bufferLevel = player.getDashMetrics().getCurrentBufferLevel('video', true);
+            
+            throughput = player.getAverageThroughput('video')
+            
+            console.info(K, totalQoe, videoQuality_1, videoQualitySwitch, videoStallDuration, bufferLevel, throughput, videoQ, selectedServiceLocation)
+        }
+    });
+    
+    player.on(dashjs.MediaPlayer.events.CONTENT_STEERING_REQUEST_COMPLETED, function (e) {
+        try {
+            if (e) {
+                if (e.currentSteeringResponseData) {
+                    window.steering = e.currentSteeringResponseData
+                    selectedServiceLocation = e.currentSteeringResponseData.pathwayPriority.toString()
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    });
+}
+
+sendQoE = async (userName) => {
+    var time = 6000;
+
+    while (true) {
+        await new Promise(r => setTimeout(r, time))
+
+        await fetch(
+            'http://143.106.73.50:30700/collect/qoe'
+            + '?userName=' + userName
+            + '&QoE=' + totalQoe
+            + '&throughput=' + throughput
+        )
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error))
+    };
+}
+
+function text(url) {
+    return fetch(url).then(res => res.text());
+}
+
+function ChunkQuality(quality, maxQuality){
+    return a_1 * Math.log(a_2 * representationId[quality]/maxQuality);
+}

@@ -1,0 +1,22 @@
+# Use the official nginx image as the base
+FROM httpd:2.4
+
+
+# Install any needed packages specified in requirements.txt
+RUN apt-get update && apt-get install -y \
+    net-tools \
+    iproute2 \
+    curl \
+    bash \
+    tcpdump \
+    iperf \
+    iputils-ping
+
+COPY ./apache.conf /usr/local/apache2/conf/httpd.conf
+
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx and keep it running in the background
+CMD apachectl -D FOREGROUND

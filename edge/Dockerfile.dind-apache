@@ -1,0 +1,25 @@
+FROM docker:rc-dind
+
+RUN apk add --update --no-cache \
+    bash \
+    tcpdump \
+    iperf \
+    iproute2 \
+    iputils \
+    curl
+
+WORKDIR /home/app/
+
+# Copy the Dockerfile for the Apache container
+COPY ./Dockerfile.apache /home/app/Dockerfile.apache
+
+# Copy the Apache configuration file
+COPY ./apache.conf /home/app/apache.conf
+
+# Create a script to start Docker and deploy Apache container
+COPY ./start.sh /home/app/start.sh
+
+# Make the script executable
+RUN chmod +x /home/app/start.sh
+
+ENTRYPOINT ["./start.sh"]
